@@ -52,8 +52,8 @@ class Rewriter:
             text = text.lstrip("```json").rstrip("```").strip()
             result = json.loads(text)
             return {
-                "title": result.get("title", article["title"]),
-                "content": result.get("content", article["content"])
+                "title": result.get("title", article.get("title", "")),
+                "content": result.get("content", article.get("content", ""))
             }
         except Exception as e:
             logger.warning(f"rewrite failed, using original: {e}")
