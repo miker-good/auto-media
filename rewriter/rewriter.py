@@ -35,8 +35,8 @@ class Rewriter:
 
     def _build_prompt(self, article):
         return PROMPT_TEMPLATE.format(
-            title=article.get("title", ""),
-            content=article.get("content", "")
+            title=article.get("title") or article.get("original_title", ""),
+            content=article.get("content") or article.get("original_content", "")
         )
 
     def rewrite(self, article):
@@ -52,12 +52,12 @@ class Rewriter:
             text = text.lstrip("```json").rstrip("```").strip()
             result = json.loads(text)
             return {
-                "title": result.get("title", article.get("title", "")),
-                "content": result.get("content", article.get("content", ""))
+                "title": result.get("title", article.get("title") or article.get("original_title", "")),
+                "content": result.get("content", article.get("content") or article.get("original_content", ""))
             }
         except Exception as e:
             logger.warning(f"rewrite failed, using original: {e}")
             return {
-                "title": article.get("title", ""),
-                "content": article.get("content", "")
+                "title": article.get("title") or article.get("original_title", ""),
+                "content": article.get("content") or article.get("original_content", "")
             }
