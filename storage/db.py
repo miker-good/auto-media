@@ -52,25 +52,28 @@ class Database:
         return cur.lastrowid
 
     def get_articles_by_status(self, status, limit=None):
-        rows = self.conn.execute(
-            "SELECT * FROM articles WHERE status=? ORDER BY crawled_at DESC",
-            (status,)
-        ).fetchall()
-        if limit:
-            rows = rows[:limit]
+        query = "SELECT * FROM articles WHERE status=? ORDER BY crawled_at DESC"
+        params = [status]
+        if limit is not None:
+            query += " LIMIT ?"
+            params.append(limit)
+        rows = self.conn.execute(query, params).fetchall()
         return [dict(r) for r in rows]
 
     def update_article_status(self, article_id, status, rewritten_title=None, rewritten_content=None):
-        if rewritten_title and rewritten_content:
-            self.conn.execute(
-                "UPDATE articles SET status=?, rewritten_title=?, rewritten_content=? WHERE id=?",
-                (status, rewritten_title, rewritten_content, article_id)
-            )
-        else:
-            self.conn.execute(
-                "UPDATE articles SET status=? WHERE id=?",
-                (status, article_id)
-            )
+        fields = ["status=?"]
+        values = [status]
+        if rewritten_title is not None:
+            fields.append("rewritten_title=?")
+            values.append(rewritten_title)
+        if rewritten_content is not None:
+            fields.append("rewritten_content=?")
+            values.append(rewritten_content)
+        values.append(article_id)
+        self.conn.execute(
+            f"UPDATE articles SET {', '.join(fields)} WHERE id=?",
+            values
+        )
         self.conn.commit()
 
     def insert_publish_log(self, article_id, platform, status, error_msg=None):
