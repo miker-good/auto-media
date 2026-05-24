@@ -30,6 +30,7 @@ class WeiboCrawler(BaseCrawler):
                 "source": self.source_name,
                 "title": entry.get("word", ""),
                 "content": entry.get("word", ""),
-                "url": entry.get("word_scheme", f"https://s.weibo.com/weibo?q={entry.get('word', '')}")
+                "url": entry.get("word_scheme", f"https://s.weibo.com/weibo?q={entry.get('word', '')}"),
+                "image_url": entry.get("icon", "")
             })
         return items

@@ -23,10 +23,18 @@ class DoubanCrawler(BaseCrawler):
         for subject in data.get("subjects", []):
             rating = subject.get("rating", {})
             rating_str = f"评分: {rating}" if isinstance(rating, str) else f"评分: {rating.get('value', 'N/A')}"
+            pic = subject.get("pic", {})
+            if isinstance(pic, dict):
+                image_url = pic.get("large") or pic.get("normal") or pic.get("small") or ""
+            elif isinstance(pic, str):
+                image_url = pic
+            else:
+                image_url = ""
             items.append({
                 "source": self.source_name,
                 "title": subject.get("title", ""),
                 "content": rating_str,
-                "url": subject.get("url", "")
+                "url": subject.get("url", ""),
+                "image_url": image_url
             })
         return items

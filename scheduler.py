@@ -1,3 +1,4 @@
+import json
 import logging
 import time
 from datetime import datetime
@@ -7,6 +8,8 @@ from storage.db import Database
 from crawler.zhihu import ZhihuCrawler
 from crawler.weibo import WeiboCrawler
 from crawler.douban import DoubanCrawler
+from crawler.reddit import RedditCrawler
+from crawler.hackernews import HackerNewsCrawler
 from rewriter.rewriter import Rewriter
 from publisher.toutiao import ToutiaoPublisher
 from publisher.baijiahao import BaijiahaoPublisher
@@ -20,13 +23,13 @@ def pipeline(config, db_path):
     db.create_tables()
 
     # Step 1: Crawl
-    crawlers = [ZhihuCrawler(), WeiboCrawler(), DoubanCrawler()]
+    crawlers = [ZhihuCrawler(), WeiboCrawler(), DoubanCrawler(), RedditCrawler(), HackerNewsCrawler()]
     total_new = 0
     for crawler in crawlers:
         items = crawler.run()
         for item in items:
             if not db.article_exists_by_url(item["url"]):
-                db.insert_article(item["source"], item["title"], item["content"], item["url"])
+                db.insert_article(item["source"], item["title"], item["content"], item["url"], item.get("image_url", ""))
                 total_new += 1
     logger.info(f"crawl: {total_new} new articles")
 
@@ -35,7 +38,12 @@ def pipeline(config, db_path):
     pending = db.get_articles_by_status("待洗稿")
     for article in pending:
         result = rewriter.rewrite(article)
-        db.update_article_status(article["id"], "已洗稿", result["title"], result["content"])
+        img_queries = result.get("image_queries", [])
+        extra_img = article.get("original_image_url", "")
+        # If EN rewrite generated image queries, store as JSON in image_url field
+        if img_queries:
+            extra_img = json.dumps(img_queries, ensure_ascii=False)
+        db.update_article_status(article["id"], "已洗稿", result["title"], result["content"], extra_img)
     logger.info(f"rewrite: processed {len(pending)} articles")
 
     # Step 3: Publish
@@ -52,7 +60,8 @@ def pipeline(config, db_path):
         for publisher in publishers:
             success, err = publisher.publish({
                 "title": article["rewritten_title"],
-                "content": article["rewritten_content"]
+                "content": article["rewritten_content"],
+                "image_url": article.get("original_image_url", "")
             })
             db.insert_publish_log(article["id"], publisher.platform_name, "成功" if success else "失败", err)
             if success:

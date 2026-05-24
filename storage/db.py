@@ -25,6 +25,7 @@ class Database:
                 original_title TEXT NOT NULL,
                 original_content TEXT NOT NULL DEFAULT '',
                 original_url TEXT NOT NULL,
+                original_image_url TEXT NOT NULL DEFAULT '',
                 rewritten_title TEXT,
                 rewritten_content TEXT,
                 status TEXT NOT NULL DEFAULT '待洗稿',
@@ -43,10 +44,10 @@ class Database:
             CREATE UNIQUE INDEX IF NOT EXISTS idx_articles_url ON articles(original_url);
         """)
 
-    def insert_article(self, source, original_title, original_content, original_url):
+    def insert_article(self, source, original_title, original_content, original_url, original_image_url=""):
         cur = self.conn.execute(
-            "INSERT INTO articles (source, original_title, original_content, original_url) VALUES (?,?,?,?)",
-            (source, original_title, original_content, original_url)
+            "INSERT INTO articles (source, original_title, original_content, original_url, original_image_url) VALUES (?,?,?,?,?)",
+            (source, original_title, original_content, original_url, original_image_url)
         )
         self.conn.commit()
         return cur.lastrowid
@@ -60,7 +61,7 @@ class Database:
         rows = self.conn.execute(query, params).fetchall()
         return [dict(r) for r in rows]
 
-    def update_article_status(self, article_id, status, rewritten_title=None, rewritten_content=None):
+    def update_article_status(self, article_id, status, rewritten_title=None, rewritten_content=None, image_url=None):
         fields = ["status=?"]
         values = [status]
         if rewritten_title is not None:
@@ -69,6 +70,9 @@ class Database:
         if rewritten_content is not None:
             fields.append("rewritten_content=?")
             values.append(rewritten_content)
+        if image_url is not None:
+            fields.append("original_image_url=?")
+            values.append(image_url)
         values.append(article_id)
         self.conn.execute(
             f"UPDATE articles SET {', '.join(fields)} WHERE id=?",
@@ -85,7 +89,7 @@ class Database:
 
     def count_published_today(self):
         row = self.conn.execute(
-            "SELECT COUNT(*) FROM publish_log WHERE date(published_at)=date('now','localtime') AND status='成功'"
+            "SELECT COUNT(DISTINCT article_id) FROM publish_log WHERE date(published_at)=date('now','localtime') AND status='成功'"
         ).fetchone()
         return row[0]
 

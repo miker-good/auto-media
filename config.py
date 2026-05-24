@@ -1,4 +1,7 @@
 import os
+from dotenv import load_dotenv
+
+load_dotenv()
 
 
 class Config:
@@ -13,3 +16,4 @@ class Config:
         self.publish_hour_1 = int(os.getenv("PUBLISH_HOUR_1", "9"))
         self.publish_hour_2 = int(os.getenv("PUBLISH_HOUR_2", "17"))
         self.publish_timeout = int(os.getenv("PUBLISH_TIMEOUT", "60"))
+        self.unsplash_access_key = os.getenv("UNSPLASH_ACCESS_KEY", "")

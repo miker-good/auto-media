@@ -29,6 +29,7 @@ class ZhihuCrawler(BaseCrawler):
                 "source": self.source_name,
                 "title": target.get("title", ""),
                 "content": target.get("excerpt", ""),
-                "url": target.get("url", f"https://www.zhihu.com/question/{target.get('id', '')}")
+                "url": target.get("url", f"https://www.zhihu.com/question/{target.get('id', '')}"),
+                "image_url": target.get("thumbnail", "")
             })
         return items
